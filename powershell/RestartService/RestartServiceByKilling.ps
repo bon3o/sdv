@@ -1,0 +1,20 @@
+$mask = "ASD.ElectronicMail.SmtpSender*"
+$servers = "ASD-B1ELML-002", "ASD-B1ELML-001"
+
+foreach ($server in $servers) {
+         $services = Invoke-Command -ComputerName $server -ArgumentList $mask -ScriptBlock {
+         param ($mask)   
+         Get-Service | where { $_.name -match $mask -and $_.Status -ne "Stopped" } #| %  { stop-process -Name $_.name -force }
+         }
+         foreach ($service in $services) {
+            write-host
+            Invoke-Command -ComputerName $server -ArgumentList $service  -ScriptBlock { param ($service)
+            write-host $service.name
+            $ServicePID = (get-wmiobject win32_service | where { $_.name -eq $service.name}).ProcessId
+            Stop-Process $ServicePID -Force
+            }
+            (Get-Service -ComputerName $server -Name $service.name).Start()
+         }  
+                       
+            
+         }
